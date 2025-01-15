@@ -10,6 +10,7 @@ tests/
 
 # Ignore Python bytecode files
 __pycache__/
+utils/__pycache__
 *.pyc
 
 # Ignore pytest cache
