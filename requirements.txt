@@ -1,0 +1,9 @@
+# $ pip3 install -r requirements.txt
+
+# Production dependencies
+pandas
+python-dotenv
+langchain_openai
+
+# Development dependencies
+pytest
