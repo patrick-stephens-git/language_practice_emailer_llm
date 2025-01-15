@@ -9,7 +9,7 @@ def get_sample_sentence(word, translation):
 
     # Initialize the LLM
     llm = ChatOpenAI(model="gpt-4o-mini", 
-                    #  api_key=openai_api_key,
+                     api_key=openai_api_key,
                      temperature=0.5, # Temp used for response creativity
                      max_tokens=50, # Max tokens of response length
                      timeout=30, # Max time (in secs) for a response from OpenAI API
@@ -21,7 +21,7 @@ def get_sample_sentence(word, translation):
                      )
 
     # LLM Prompt
-    input = f"You are a Mexican citizen who is helping a non-native student of the Spanish language from the United States to learn how to speak Spanish. The student is focused on learning the word: '{word}'. Please provide the student with a sample sentence in Spanish that uses '{word}' in a way you would use it in a normal conversation. Only respond with the example sentence. Do not provide any additional information."
+    input = f"You are a Mexican national who is helping a non-native student of the Spanish language from the United States to learn how to speak Spanish. The student is focused on learning the word: '{word}'. Please provide the student with a sample sentence in Spanish that uses '{word}' in a way you would use it in a normal conversation. Only respond with the example sentence. Do not provide any additional information."
     logger.info(f"{input}")
     
     # Generate LLM response

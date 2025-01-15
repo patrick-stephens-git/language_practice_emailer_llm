@@ -6,11 +6,11 @@ Language Practice Emailer is a Python project designed to help users practice a 
 ## Installation
 1. Clone the repository:
     ```
-    git clone https://github.com/patrick-stephens-git/language_practice_emailer.git
+    git clone https://github.com/patrick-stephens-git/language_practice_emailer_llm.git
     ```
 2. Navigate to the project directory:
     ```
-    cd language_practice_emailer
+    cd language_practice_emailer_llm
     ```
 3. Install the required dependencies:
     ```
@@ -24,6 +24,7 @@ Language Practice Emailer is a Python project designed to help users practice a 
     EMAIL_ACCOUNT={sending_email_address}
     EMAIL_PASSWORD={sending_email_password}
     EMAIL_RECIPIENTS={email_recipients}
+    OPENAI_API_KEY={api_key}
     ```
 2. Customize the configuration file with your email credentials and Google Sheet ID.
 
