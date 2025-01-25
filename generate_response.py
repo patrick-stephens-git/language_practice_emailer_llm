@@ -10,8 +10,8 @@ def get_sample_sentence(word, translation):
     # Initialize the LLM
     llm = ChatOpenAI(model="gpt-4o-mini", 
                      api_key=openai_api_key,
-                     temperature=0.5, # Temp used for response creativity
-                     max_tokens=50, # Max tokens of response length
+                     temperature=1.2, # Temp used for response creativity (Range is 0.0 to 2.0); Low temp (0.0 to 0.4); responses become more focused, deterministic, and repetitive. The model is less likely to explore creative or diverse options and will often produce the "most likely" response. This is ideal for factual or predictable outputs; Moderate temp (0.5 to 0.7) responses balance creativity and coherence. The model generates more varied responses while still maintaining some predictability. This range is commonly used for conversational or creative tasks; High temp (0.8 to 2.0) responses become highly creative and diverse but may lose coherence or relevance to the input. This is useful for brainstorming or generating unexpected ideas.
+                     max_tokens=70, # Max tokens of response length
                      timeout=30, # Max time (in secs) for a response from OpenAI API
                      max_retries=2, # Max retry attempts if request fails (Default is 2)
                      n=1, # Max num of responses to generate (default is 1)
@@ -21,7 +21,7 @@ def get_sample_sentence(word, translation):
                      )
 
     # LLM Prompt
-    input = f"You are a Mexican national who is helping a non-native student of the Spanish language from the United States to learn how to speak Spanish. The student is focused on learning the word: '{word}'. Please provide the student with a sample sentence in Spanish that uses '{word}' in a way you would use it in a normal conversation. Only respond with the example sentence. Do not provide any additional information."
+    input = f"You're a Mexican national helping a student learn the Spanish language, emphasizing Mexican use cases. The student is learning the word: '{word}'. Give the student a sample Spanish sentence using '{word}' as you would use it in normal conversation. Respond with the example sentence. Do not provide any additional information. There is a 15% chance of using examples in the subjunctive mood."
     logger.info(f"{input}")
     
     # Generate LLM response
