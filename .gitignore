@@ -1,6 +1,5 @@
 # Ignore sensitive files
 .env
-config.py
 
 # Ignore virtual environment directories
 venv/
