@@ -1,9 +1,9 @@
-from config import openai_api_key
+from config import openai_api_key, target_country, target_language, target_focus, focus_weight
 from utils.logging_config import setup_logging
 from langchain_openai import ChatOpenAI
 
 
-def get_sample_sentence(word, translation):
+def get_sample_sentence(word):
     # Logging
     logger = setup_logging()
 
@@ -21,7 +21,14 @@ def get_sample_sentence(word, translation):
                      )
 
     # LLM Prompt
-    input = f"You're a Mexican national helping a student learn the Spanish language, emphasizing Mexican use cases. The student is learning the word: '{word}'. Give the student a sample Spanish sentence using '{word}' as you would use it in normal conversation. Respond with the example sentence. Do not provide any additional information. There is a 15% chance of using examples in the subjunctive mood."
+    if target_focus != "":
+        input = f"""
+                You were born and raised in {target_country}. You are helping a student learn {target_language}. The student is learning the word: '{word}'. Write the student a sample sentence using '{word}' in the {target_language} language as you would use it in a normal conversation. Emphasize use cases of '{word}' within {target_country}. Respond only with the sample sentence. Do not respond with any additional information. There is a {focus_weight} chance of generating a sample sentence that helps a student learn {target_focus}.
+                """
+    else:
+        input = f"""
+                You were born and raised in {target_country}. You are helping a student learn {target_language}. The student is learning the word: '{word}'. Write the student a sample sentence using '{word}' in the {target_language} language as you would use it in a normal conversation. Emphasize use cases of '{word}' within {target_country}. Respond only with the sample sentence. Do not respond with any additional information.
+                """
     logger.info(f"{input}")
     
     # Generate LLM response
@@ -32,7 +39,6 @@ def get_sample_sentence(word, translation):
     return example_sentence
 
 if __name__ == '__main__':
-    word: str = "enseñar"
-    translation: str = "to teach, to show"
-    example_sentence = get_sample_sentence(word, translation)
+    word: str = "correr"
+    example_sentence = get_sample_sentence(word)
     print(example_sentence)

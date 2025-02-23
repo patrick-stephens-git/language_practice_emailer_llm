@@ -26,7 +26,7 @@ Language Practice Emailer is a Python project designed to help users practice a 
     EMAIL_RECIPIENTS={email_recipients}
     OPENAI_API_KEY={api_key}
     ```
-2. Customize the configuration file with your email credentials and Google Sheet ID.
+2. Customize the configuration file with your target country, target language, and focus variables
 
 ## Usage
 Run the main script to start sending language practice emails.

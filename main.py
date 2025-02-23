@@ -6,7 +6,7 @@ from utils.logging_config import setup_logging
 def main() -> None: 
     setup_logging()
     sample_word, sample_translation = get_word()
-    example_sentence = get_sample_sentence(sample_word, sample_translation)
+    example_sentence = get_sample_sentence(sample_word)
     emailer(sample_word, sample_translation, example_sentence)
 
 if __name__ == '__main__':
