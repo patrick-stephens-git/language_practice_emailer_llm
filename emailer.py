@@ -56,7 +56,7 @@ def emailer(word, translation, example_sentence) -> None:
     logger.info("Email successfully sent.")
 
 if __name__ == '__main__':
-    word: str = "enseñar2"
+    word: str = "enseñar"
     translation: str = "to teach, to show"
     example_sentence: str = "Me gusta enseñar español a mis amigos porque quiero que aprendan la lengua y la cultura."
 
