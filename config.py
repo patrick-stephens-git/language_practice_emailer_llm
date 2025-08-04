@@ -2,12 +2,15 @@ from dotenv import load_dotenv
 import os
 
 # Define the global variables
-target_country = "Mexico"
-target_language = "Spanish"
+target_country: str = "Mexico"
+target_language: str = "Spanish"
 
 # If you have a focus on a specific language concept, you can set it here
-target_focus = "subjunctive mood" # ex: "imperfect conjugation"; leave empty if no focus: ""
-focus_weight = "15%" # ex: "20%" (always use N% format); leave empty if no focus: ""
+target_focus: str = "subjunctive mood" # ex: "imperfect conjugation"; leave empty if no focus: ""
+focus_weight: str = "15%" # ex: "20%" (always use N% format); leave empty if no focus: ""
+
+subject_list: list = ('yo','tú','usted')
+subject_usted_list: list = ('waiter','cashier','bartender','dentist','doctor')
 
 # Load the environment variables
 load_dotenv('.env')

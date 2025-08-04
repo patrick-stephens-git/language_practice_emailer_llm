@@ -1,11 +1,23 @@
-from config import openai_api_key, target_country, target_language, target_focus, focus_weight
+from config import openai_api_key, target_country, target_language, target_focus, focus_weight, subject_list, subject_usted_list
 from utils.logging_config import setup_logging
 from langchain_openai import ChatOpenAI
+import random
 
 
 def get_sample_sentence(word):
     # Logging
     logger = setup_logging()
+
+    # Get subject of the sample sentence
+    sample_sentence_subject = random.choice(subject_list) # Randomly select an item from the list
+    print(sample_sentence_subject)
+    if sample_sentence_subject == 'usted':
+        usted_subject = random.choice(subject_usted_list)
+        sample_sentence_subject = f"{sample_sentence_subject} (who is a {usted_subject})"
+        print(sample_sentence_subject)
+    else:
+        pass
+    
 
     # Initialize the LLM
     llm = ChatOpenAI(model="gpt-4o-mini", 
@@ -23,7 +35,10 @@ def get_sample_sentence(word):
     # LLM Prompt
     if target_focus != "":
         input = f"""
-                You were born and raised in {target_country}. You are helping a student learn {target_language}. The student is learning the word: '{word}'. Write the student a sample sentence using '{word}' in the {target_language} language as you would use it in a normal conversation. Emphasize use cases of '{word}' within {target_country}. Respond only with the sample sentence. Do not respond with any additional information. There is a {focus_weight} chance of generating a sample sentence that helps a student learn {target_focus}.
+                You were born and raised in {target_country}. You are helping a student learn {target_language}. The student is learning the word: '{word}'. Write the student a sample sentence using '{word}' in the {target_language} language as you would use it in a normal conversation. Emphasize common use cases of '{word}' within {target_country}. '{sample_sentence_subject}' is the subject of the sample sentence. The sentence should be as if you were speaking directly to or about the subject.
+                
+                Respond only with the sample sentence. Do not respond with any additional information. 
+                There is a {focus_weight} chance of generating a sample sentence that helps a student learn {target_focus}.
                 """
     else:
         input = f"""
