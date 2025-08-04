@@ -42,7 +42,9 @@ def get_sample_sentence(word):
                 """
     else:
         input = f"""
-                You were born and raised in {target_country}. You are helping a student learn {target_language}. The student is learning the word: '{word}'. Write the student a sample sentence using '{word}' in the {target_language} language as you would use it in a normal conversation. Emphasize use cases of '{word}' within {target_country}. Respond only with the sample sentence. Do not respond with any additional information.
+                You were born and raised in {target_country}. You are helping a student learn {target_language}. The student is learning the word: '{word}'. Write the student a sample sentence using '{word}' in the {target_language} language as you would use it in a normal conversation. Emphasize common use cases of '{word}' within {target_country}. '{sample_sentence_subject}' is the subject of the sample sentence. The sentence should be as if you were speaking directly to or about the subject.
+                
+                Respond only with the sample sentence. Do not respond with any additional information.
                 """
     logger.info(f"{input}")
     
