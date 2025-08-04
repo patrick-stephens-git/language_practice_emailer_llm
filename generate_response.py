@@ -10,11 +10,11 @@ def get_sample_sentence(word):
 
     # Get subject of the sample sentence
     sample_sentence_subject = random.choice(subject_list) # Randomly select an item from the list
-    print(sample_sentence_subject)
+    # print(sample_sentence_subject)
     if sample_sentence_subject == 'usted':
         usted_subject = random.choice(subject_usted_list)
         sample_sentence_subject = f"{sample_sentence_subject} (who is a {usted_subject})"
-        print(sample_sentence_subject)
+        # print(sample_sentence_subject)
     else:
         pass
     
