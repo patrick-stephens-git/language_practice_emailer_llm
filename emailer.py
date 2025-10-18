@@ -4,7 +4,7 @@ from config import sender_email_account, sender_email_password, email_recipients
 import smtplib
 from email.mime.text import MIMEText
 
-def emailer(word, translation, example_sentence) -> None:
+def emailer(word, translation, example_sentence, word_country_match) -> None:
     #####################################
     ## Logging:
     logger = setup_logging()
@@ -31,7 +31,9 @@ def emailer(word, translation, example_sentence) -> None:
     logger.info(f"Email subject line: {email_subject_line}")
     email_body: str = f"""
     Translation: {translation}<br>
-    Used in a sentence: {example_sentence}
+    Used in a sentence: {example_sentence}<br>
+    <br>
+    Locally spoken? {word_country_match}
     """
     logger.info(f"Email body: {email_body}")
 
@@ -59,5 +61,6 @@ if __name__ == '__main__':
     word: str = "enseñar"
     translation: str = "to teach, to show"
     example_sentence: str = "Me gusta enseñar español a mis amigos porque quiero que aprendan la lengua y la cultura."
+    word_country_match: str = "Yes - 'enseñar' is commonly used in Spanish-speaking countries like Spain and Latin America."
 
-    emailer(word, translation, example_sentence)
+    emailer(word, translation, example_sentence, word_country_match)

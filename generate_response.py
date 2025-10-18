@@ -32,30 +32,110 @@ def get_sample_sentence(word):
                      streaming=False # stream response back from OpenAI API (default is False)
                      )
 
-    # LLM Prompt
+    # LLM Prompt for Sample Sentence Generation
     if target_focus != "":
-        input = f"""
-                You were born and raised in {target_country}. You are helping a student learn {target_language}. The student is learning the word: '{word}'. Write the student a sample sentence using '{word}' in the {target_language} language as you would use it in a normal conversation. Emphasize common use cases of '{word}' within {target_country}. '{sample_sentence_subject}' is the subject of the sample sentence. The sentence should be as if you were speaking directly to or about the subject.
-                
-                Respond only with the sample sentence. Do not respond with any additional information. 
-                There is a {focus_weight} chance of generating a sample sentence that helps a student learn {target_focus}.
-                """
+        sample_sentence_input = f"""
+        # Role:
+        - You were born and raised in {target_country}.
+        - You are a teacher of the {target_language} language.
+        - You are helping a student learn {target_language}.
+
+        # Goal Completion Guidelines:
+        - You will be given a Target Word. Use the Target Word to complete your tasks.
+
+        # Target Word:
+        - The student is learning the Target Word: '{word}'.
+        
+        # Goal:
+        Your goal is to complete the following tasks:
+        - Task 1: Write a Sample Sentence
+
+        # Tasks:
+        ## Task 1: Write a Sample Sentence
+        - Write the student a Sample Sentence using '{word}' in the {target_language} language as you would use it in a normal conversation.
+        - Emphasize common use cases of '{word}' within {target_country}.
+        - Make the Subject of the Sample Sentence: '{sample_sentence_subject}'.
+        - The Sample Sentence should represent as if you were speaking directly to OR about the subject.
+        - You have a {focus_weight} chance of writing a Sample Sentence that helps the student learn about {target_focus}.
+        - Respond only with the sample sentence. Do not respond with any additional information.
+        ---
+        # Output Template:
+        - SampleSentence.
+        """
     else:
-        input = f"""
-                You were born and raised in {target_country}. You are helping a student learn {target_language}. The student is learning the word: '{word}'. Write the student a sample sentence using '{word}' in the {target_language} language as you would use it in a normal conversation. Emphasize common use cases of '{word}' within {target_country}. '{sample_sentence_subject}' is the subject of the sample sentence. The sentence should be as if you were speaking directly to or about the subject.
-                
-                Respond only with the sample sentence. Do not respond with any additional information.
-                """
-    logger.info(f"{input}")
+        sample_sentence_input = f"""
+        # Role:
+        - You were born and raised in {target_country}.
+        - You are a teacher of the {target_language} language.
+        - You are helping a student learn {target_language}.
+
+        # Goal Completion Guidelines:
+        - You will be given a Target Word. Use the Target Word to complete your tasks.
+
+        # Target Word:
+        - The student is learning the Target Word: '{word}'.
+        
+        # Goal:
+        Your goal is to complete the following tasks:
+        - Task 1: Write a Sample Sentence
+
+        # Tasks:
+        ## Task 1: Write a Sample Sentence
+        - Write the student a Sample Sentence using '{word}' in the {target_language} language as you would use it in a normal conversation.
+        - Emphasize common use cases of '{word}' within {target_country}.
+        - Make the Subject of the Sample Sentence: '{sample_sentence_subject}'.
+        - The Sample Sentence should represent as if you were speaking directly to OR about the subject.
+        - Respond only with the sample sentence. Do not respond with any additional information.
+        ---
+        # Output Template:
+        - SampleSentence.
+        """
+    logger.info(f"{sample_sentence_input}")
     
-    # Generate LLM response
-    response = llm.invoke(input)
+    # Generate LLM Sample Sentence response:
+    sample_sentence_response = llm.invoke(sample_sentence_input)
     # Extract the assistant's reply and add to the conversation history
-    logger.info(f"{response}")
-    example_sentence = response.content
-    return example_sentence
+    logger.info(f"{sample_sentence_response}")
+    example_sentence = sample_sentence_response.content
+
+    # LLM Prompt for Understanding if Word is common in Target Country
+    word_country_match_input = f"""
+        # Role:
+        - You were born and raised in {target_country}.
+        - You are a teacher of the {target_language} language.
+        - You are helping a student learn {target_language}.
+
+        # Goal Completion Guidelines:
+        - You will be given a Target Word. Use the Target Word to complete your tasks.
+
+        # Target Word:
+        - The student is learning the Target Word: '{word}'.
+        
+        # Goal:
+        Your goal is to complete the following tasks:
+        - Task 1: Determine if the Target Word is commonly used in {target_country}
+
+        # Tasks:
+        ## Task 1: Determine if the Target Word is commonly used in {target_country}
+        - Determine if the Target Word '{word}' is commonly used in {target_country}.
+        - Answer with 'Yes' if it is commonly used, 'No' if it is NOT commonly used, or 'Unsure' if you are uncertain.
+        - Provide a brief explanation for your answer, for example, if it is NOT commonly used in {target_country}, explain which Country this word is more commonly used in.
+        - Respond only with the answer and a bref explanation for your answer. Do not respond with any additional information.
+        ---
+        # Output Template:
+        - Yes/No/Unsure - explanationForAnswer.
+        """
+    logger.info(f"{word_country_match_input}")
+    
+    # Generate LLM response for Word-Country Match:
+    word_country_match_response = llm.invoke(word_country_match_input)
+    # Extract the assistant's reply and add to the conversation history
+    logger.info(f"{word_country_match_response}")
+    word_country_match = word_country_match_response.content
+    return example_sentence, word_country_match
 
 if __name__ == '__main__':
-    word: str = "correr"
-    example_sentence = get_sample_sentence(word)
+    word: str = "allende"
+    example_sentence, word_country_match = get_sample_sentence(word)
     print(example_sentence)
+    print(word_country_match)
