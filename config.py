@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 
 # Define the global variables
-target_country: str = "Mexico"
+target_country: str = "Mexico City"
 target_language: str = "Spanish"
 
 # If you have a focus on a specific language concept, you can set it here

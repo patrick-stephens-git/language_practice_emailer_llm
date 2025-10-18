@@ -119,11 +119,15 @@ def get_sample_sentence(word):
         ## Task 1: Determine if the Target Word is commonly used in {target_country}
         - Determine if the Target Word '{word}' is commonly used in {target_country}.
         - Answer with 'Yes' if it is commonly used, 'No' if it is NOT commonly used, or 'Unsure' if you are uncertain.
-        - Provide a brief explanation for your answer, for example, if it is NOT commonly used in {target_country}, explain which Country this word is more commonly used in.
-        - Respond only with the answer and a bref explanation for your answer. Do not respond with any additional information.
+        - Provide ONLY the following context depending on your answer:
+        -- IF Yes THEN "Yes - the word 'word' refers to 'meaning'."
+        -- IF No THEN "No - the word 'word' refers to 'meaning'."
+        -- IF Unsure THEN "Unsure - the word 'word' refers to 'meaning'."
+        - Do NOT provide any other information in your response beyond what is specified above.
+        - Do NOT explain your reasoning.
         ---
         # Output Template:
-        - Yes/No/Unsure - explanationForAnswer.
+        - Yes/No/Unsure - the word 'word' refers to 'meaning'.
         """
     logger.info(f"{word_country_match_input}")
     
@@ -135,7 +139,14 @@ def get_sample_sentence(word):
     return example_sentence, word_country_match
 
 if __name__ == '__main__':
-    word: str = "allende"
+    word: str = "coger" # Example for "Not common in Mexico"
+    # word: str = "ordenador" # Example for "Not common in Mexico"
+    # word: str = "patata" # Example for "Not common in Mexico"
+    # word: str = "choclo" # Example for "Not common in Mexico"
+    # word: str = "pileta" # Example for "Not common in Mexico"
+    # word: str = "recoger" # Example for "Common in Mexico"
+    # word: str = "sudor" # Example for "Common in Mexico"
+    # word: str = "cima" # Example for "Common in Mexico"
     example_sentence, word_country_match = get_sample_sentence(word)
     print(example_sentence)
     print(word_country_match)
