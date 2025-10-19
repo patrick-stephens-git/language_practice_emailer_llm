@@ -123,6 +123,8 @@ def get_sample_sentence(word):
         -- IF Yes THEN "Yes - the word 'word' refers to 'meaning'."
         -- IF No THEN "No - the word 'word' refers to 'meaning'."
         -- IF Unsure THEN "Unsure - the word 'word' refers to 'meaning'."
+        - Replace 'word' with '{word}'.
+        - Replace 'meaning' with the appropriate meaning of the word in {target_country}.
         - Do NOT provide any other information in your response beyond what is specified above.
         - Do NOT explain your reasoning.
         ---
