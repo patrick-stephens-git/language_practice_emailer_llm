@@ -4,6 +4,16 @@ from langchain_openai import ChatOpenAI
 import random
 
 
+# Determine if responses contain "Yes", "No", or "Unsure"
+def extract_commonality(text):
+    text_clean = text.strip().capitalize() # Removes leading/trailing whitespace and newlines, then capitalize first letter; Example: "  yes\n" -> "Yes"
+    if text_clean.startswith("Yes"): # Check if the normalized text starts with the substring "Yes"
+        return "Yes"
+    elif text_clean.startswith("No"): # Check if the normalized text starts with the substring "No"
+        return "No"
+    else:
+        return "Unsure"
+
 def get_sample_sentence(word):
     # Logging
     logger = setup_logging()
@@ -138,6 +148,54 @@ def get_sample_sentence(word):
     # Extract the assistant's reply and add to the conversation history
     logger.info(f"{word_country_match_response}")
     word_country_match = word_country_match_response.content
+
+    # LLM Prompt for Understanding if Word is common in Target Country
+    word_country_match_check_input = f"""
+        # Role:
+        - You were born and raised in {target_country}.
+        - You are a teacher of the {target_language} language.
+        - You are helping a student learn {target_language}.
+
+        # Goal Completion Guidelines:
+        - You will be given a Target Word. Use the Target Word to complete your tasks.
+
+        # Target Word:
+        - The student is learning the Target Word: '{word}'.
+        
+        # Goal:
+        Your goal is to complete the following tasks:
+        - Task 1: Determine if the Target Word is commonly used in {target_country}
+
+        # Tasks:
+        ## Task 1: Determine if the Target Word is commonly used in {target_country}
+        - Determine if the Target Word '{word}' is commonly used in {target_country}.
+        - Answer with 'Yes' if it is commonly used, 'No' if it is NOT commonly used, or 'Unsure' if you are uncertain.
+        - Provide ONLY the following context depending on your answer:
+        -- IF Yes THEN "Yes"
+        -- IF No THEN "No"
+        -- IF Unsure THEN "Unsure"
+        - Do NOT provide any other information in your response beyond what is specified above.
+        - Do NOT explain your reasoning.
+        ---
+        # Output Template:
+        - Yes/No/Unsure
+        """
+    logger.info(f"{word_country_match_check_input}")
+
+    # Generate LLM response for Word-Country Match Checker:
+    word_country_match_check_response = llm.invoke(word_country_match_check_input)
+    # Extract the assistant's reply and add to the conversation history
+    logger.info(f"{word_country_match_check_response}")
+    word_country_match_check = word_country_match_check_response.content
+
+    word_country_match_commonality = extract_commonality(word_country_match)
+    word_country_match_check_commonality = extract_commonality(word_country_match_check)
+
+    if word_country_match_commonality == word_country_match_check_commonality:
+        word_country_match = word_country_match
+    else:
+        word_country_match = "Unsure"
+
     return example_sentence, word_country_match
 
 if __name__ == '__main__':
@@ -149,6 +207,8 @@ if __name__ == '__main__':
     # word: str = "recoger" # Example for "Common in Mexico"
     # word: str = "sudor" # Example for "Common in Mexico"
     # word: str = "cima" # Example for "Common in Mexico"
+    # word: str = "acechar" # Example for "Common in Mexico"
+    # word: str = "verga"  # Example for "Unsure in Mexico"
     example_sentence, word_country_match = get_sample_sentence(word)
     print(example_sentence)
     print(word_country_match)
