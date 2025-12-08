@@ -128,18 +128,24 @@ def get_sample_sentence(word):
         # Tasks:
         ## Task 1: Determine if the Target Word is commonly used in {target_country}
         - Determine if the Target Word '{word}' is commonly used in {target_country}.
+        - A word is 'commonly used' if:
+        -- '{word}' is frequently used in everyday conversations by native speakers in {target_country}.
+        -- The {target_country} media (TV, newspapers, radio, internet) frequently uses '{word}'.
+        -- The {target_country} variety of {target_language} recognizes '{word}' as natural.
         - Answer with 'Yes' if it is commonly used, 'No' if it is NOT commonly used, or 'Unsure' if you are uncertain.
         - Provide ONLY the following context depending on your answer:
-        -- IF Yes THEN "Yes - the word 'word' refers to 'meaning'."
-        -- IF No THEN "No - the word 'word' refers to 'meaning'."
-        -- IF Unsure THEN "Unsure - the word 'word' refers to 'meaning'."
+        -- IF Yes THEN "Yes - the word '{word}' refers to 'meaning'."
+        -- IF No THEN "No"
+        -- IF Unsure THEN "Unsure"
         - Replace 'word' with '{word}'.
         - Replace 'meaning' with the appropriate meaning of the word in {target_country}.
         - Do NOT provide any other information in your response beyond what is specified above.
         - Do NOT explain your reasoning.
         ---
         # Output Template:
-        - Yes/No/Unsure - the word 'word' refers to 'meaning'.
+        - Yes - the word 'word' refers to 'meaning'.
+        - No
+        - Unsure
         """
     logger.info(f"{word_country_match_input}")
     
@@ -169,6 +175,10 @@ def get_sample_sentence(word):
         # Tasks:
         ## Task 1: Determine if the Target Word is commonly used in {target_country}
         - Determine if the Target Word '{word}' is commonly used in {target_country}.
+        - A word is 'commonly used' if:
+        -- '{word}' is frequently used in everyday conversations by native speakers in {target_country}.
+        -- The {target_country} media (TV, newspapers, radio, internet) frequently uses '{word}'.
+        -- The {target_country} variety of {target_language} recognizes '{word}' as natural.
         - Answer with 'Yes' if it is commonly used, 'No' if it is NOT commonly used, or 'Unsure' if you are uncertain.
         - Provide ONLY the following context depending on your answer:
         -- IF Yes THEN "Yes"
@@ -178,7 +188,9 @@ def get_sample_sentence(word):
         - Do NOT explain your reasoning.
         ---
         # Output Template:
-        - Yes/No/Unsure
+        - Yes
+        - No
+        - Unsure
         """
     logger.info(f"{word_country_match_check_input}")
 
@@ -204,11 +216,13 @@ if __name__ == '__main__':
     # word: str = "patata" # Example for "Not common in Mexico"
     # word: str = "choclo" # Example for "Not common in Mexico"
     # word: str = "pileta" # Example for "Not common in Mexico"
+    # word: str = "onza" # Example for "Not common in Mexico"
     # word: str = "recoger" # Example for "Common in Mexico"
     # word: str = "sudor" # Example for "Common in Mexico"
     # word: str = "cima" # Example for "Common in Mexico"
     # word: str = "acechar" # Example for "Common in Mexico"
     # word: str = "verga"  # Example for "Unsure in Mexico"
+    # word: str = "embargar" # Example for "Unsure in Mexico"
     example_sentence, word_country_match = get_sample_sentence(word)
     print(example_sentence)
     print(word_country_match)
