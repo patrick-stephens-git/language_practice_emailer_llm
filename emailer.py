@@ -4,7 +4,7 @@ from config import sender_email_account, sender_email_password, email_recipients
 import smtplib
 from email.mime.text import MIMEText
 
-def emailer(word, translation, example_sentence, word_country_match) -> None:
+def emailer(word, translation, ai_translation, example_sentence, example_synonyms, word_country_match) -> None:
     #####################################
     ## Logging:
     logger = setup_logging()
@@ -26,17 +26,34 @@ def emailer(word, translation, example_sentence, word_country_match) -> None:
         return
 
     #####################################
+    #####################################
+    #####################################
+    #####################################
     ## Setup Email Content:
-    email_subject_line: str = f"{today}: {word}" 
-    logger.info(f"Email subject line: {email_subject_line}")
-    email_body: str = f"""
-    Translation: {translation}<br>
-    Used in a sentence: {example_sentence}<br>
-    <br>
-    Locally spoken? {word_country_match}
-    """
-    logger.info(f"Email body: {email_body}")
+    if example_synonyms == 0:
+        email_subject_line: str = f"{today}: {word}" 
+        logger.info(f"Email subject line: {email_subject_line}")
+        email_body: str = f"""
+        My Translation: {translation}<br>
+        AI Translation: {ai_translation}<br>
+        Ex: {example_sentence}<br>
+        {word_country_match}<br>
+        """
+        logger.info(f"Email body: {email_body}")
+    else:
+        email_subject_line: str = f"{today}: {word}" 
+        logger.info(f"Email subject line: {email_subject_line}")
+        email_body: str = f"""
+        My Translation: {translation}<br>
+        AI Translation: {ai_translation}<br>
+        {example_synonyms}<br>
+        {word_country_match}<br>
+        """
+        logger.info(f"Email body: {email_body}")
 
+    #####################################
+    #####################################
+    #####################################
     #####################################
     ## Email configuration:
     message = MIMEText(email_body, "html")
@@ -46,7 +63,10 @@ def emailer(word, translation, example_sentence, word_country_match) -> None:
 
     #####################################
     ## Authentication:
-    server = smtplib.SMTP_SSL(host = "smtp.gmail.com", port = 465)
+    server = smtplib.SMTP("smtp.gmail.com", 587, local_hostname="localhost")
+    server.ehlo()
+    server.starttls()
+    server.ehlo()
     server.login(user = sender_email_account, password = sender_email_password) # The App Password Needed AFTER the Google Update for Less Secure Apps: https://support.google.com/accounts/answer/6010255?hl=en&visit_id=637902943692838375-3915028692&p=less-secure-apps&rd=1#zippy=%2Cif-less-secure-app-access-is-on-for-your-account%2Cupdate-your-app-or-operating-system%2Cuse-more-secure-apps%2Cuse-an-app-password
 
     #####################################
@@ -58,9 +78,24 @@ def emailer(word, translation, example_sentence, word_country_match) -> None:
     logger.info("Email successfully sent.")
 
 if __name__ == '__main__':
+    ################################################
+    ################################################
+    # With Example Sentence
+    # word: str = "enseñar"
+    # translation: str = "to teach, to show"
+    # example_sentence: str = "Me gusta enseñar español a mis amigos porque quiero que aprendan la lengua y la cultura."
+    # example_synonyms: int = 0
+    # ai_translation: str = "translation"
+    # word_country_match: str = "Yes - 'enseñar' is commonly used in Spanish-speaking countries like Spain and Latin America."
+
+    ################################################
+    ################################################
+    # With Example Synonyms
     word: str = "enseñar"
     translation: str = "to teach, to show"
-    example_sentence: str = "Me gusta enseñar español a mis amigos porque quiero que aprendan la lengua y la cultura."
+    example_sentence: int = 0
+    example_synonyms: str = "Synonym1, Synonym2, Synony3."
+    ai_translation: str = "translation"
     word_country_match: str = "Yes - 'enseñar' is commonly used in Spanish-speaking countries like Spain and Latin America."
 
-    emailer(word, translation, example_sentence, word_country_match)
+    emailer(word, translation, ai_translation, example_sentence, example_synonyms, word_country_match)
