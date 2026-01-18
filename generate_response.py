@@ -171,16 +171,18 @@ def response_generation(word):
         
         # Goal:
         Your goal is to complete the following tasks:
-        - Task 1: Translate the Target Word or Phrase
+        - Task 1: Provide the Meaning of the Target Word or Phrase
 
         # Tasks:
-        ## Task 1: Translate the Target Word or Phrase
-        - Provide an English translation of the Target Word or Phrase '{word}'.
-        - Replace englishTranslationText with this English translation.
+        ## Task 1: Provide the Meaning of the Target Word or Phrase
+        - Provide an English meaning of the Target Word or Phrase '{word}' in {target_country}.
+        - Replace englishMeaningText with this English meaning.
+        - Limit your response to ONLY the English meaning of the Target Word or Phrase.
+        - Respond only with the englishMeaningText. Do not respond with any additional information.
         - Do NOT explain your reasoning.
         ---
         # Output Template:
-        englishTranslationText
+        englishMeaningText
         """
     logger.info(f"{translation_input}")
     
@@ -321,9 +323,10 @@ def response_generation(word):
     return ai_translation, example_synonyms, example_sentence, word_country_match
 
 if __name__ == '__main__':
-    word: str = "coger" # Example for "Most common in Spain"
+    # word: str = "coger" # Example for "Most common in Spain"
     # word: str = "ordenador" # Example for "Most common in Spain"
     # word: str = "patata" # Example for "Most common in Spain"
+    # word: str = "joder" # Example for "Most common in Spain"
     # word: str = "choclo" # Example for "Most common in Argentina"
     # word: str = "pileta" # Example for "Most common in Argentina"
     # word: str = "onza" # Example for "Most common in All Spanish-speaking countries"
@@ -336,8 +339,13 @@ if __name__ == '__main__':
     # word: str = "no mames" # Example for "Most common in Mexico"
     # word: str = "neta" # Example for "Most common in Mexico"
     # word: str = "chido" # Example for "Most common in Mexico"
+    # word: str = "tajar" # Example for "Most common in Other"
     # word: str = "asdfsafsd" # Example for "Most common in Other"
     # word: str = "xxx" # Example for "Most common in Other"
+    # word: str = "asolar" 
+    # word: str = "onza" 
+    # word: str = "en pos"
+    # word = "qué anda"
     ai_translation, example_synonyms, example_sentence, word_country_match = response_generation(word)
     print(ai_translation)
     print(example_synonyms)
