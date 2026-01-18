@@ -335,7 +335,7 @@ if __name__ == '__main__':
     # word: str = "cima" # Example for "Most common in All Spanish-speaking countries"
     # word: str = "acechar" # Example for "Most common in All Spanish-speaking countries"
     # word: str = "verga"  # Example for "Most common in All Spanish-speaking countries"
-    # word: str = "embargar" # Example for "Most common in All Spanish-speaking countries"
+    word: str = "embargar" # Example for "Most common in All Spanish-speaking countries"
     # word: str = "no mames" # Example for "Most common in Mexico"
     # word: str = "neta" # Example for "Most common in Mexico"
     # word: str = "chido" # Example for "Most common in Mexico"
