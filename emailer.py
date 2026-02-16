@@ -3,6 +3,7 @@ from utils.logging_config import setup_logging
 from config import sender_email_account, sender_email_password, email_recipients
 import smtplib
 from email.mime.text import MIMEText
+import random # Import random module for randomly selecting subject format
 
 def emailer(word, translation, ai_translation, example_sentence, example_synonyms, word_country_match) -> None:
     #####################################
@@ -30,25 +31,43 @@ def emailer(word, translation, ai_translation, example_sentence, example_synonym
     #####################################
     #####################################
     ## Setup Email Content:
-    if example_synonyms == 0:
-        email_subject_line: str = f"{today}: {word}" 
+    show_translation_in_subject: bool = random.choice([True, False]) # Randomly decide whether to show word or translation in subject
+    logger.info(f"Show translation in subject: {show_translation_in_subject}") # Log which format was selected
+    if show_translation_in_subject: # If True, show translation in subject and word in body
+        email_subject_line: str = f"{today}: {translation}" # Use translation as the subject
         logger.info(f"Email subject line: {email_subject_line}")
-        email_body: str = f"""
-        My Translation: {translation}<br>
-        AI Translation: {ai_translation}<br>
-        Ex: {example_sentence}<br>
-        {word_country_match}<br>
-        """
+        if example_synonyms == 0: # If no synonyms, show example sentence
+            email_body: str = f"""
+            Word or Phrase: {word}<br>
+            AI Translation: {ai_translation}<br>
+            Ex: {example_sentence}<br>
+            {word_country_match}<br>
+            """
+        else: # If synonyms exist, show synonyms instead of example sentence
+            email_body: str = f"""
+            Word or Phrase: {word}<br>
+            AI Translation: {ai_translation}<br>
+            {example_synonyms}<br>
+            {word_country_match}<br>
+            """
         logger.info(f"Email body: {email_body}")
-    else:
-        email_subject_line: str = f"{today}: {word}" 
+    else: # If False, show word in subject and translation in body (original behavior)
+        email_subject_line: str = f"{today}: {word}" # Use word as the subject
         logger.info(f"Email subject line: {email_subject_line}")
-        email_body: str = f"""
-        My Translation: {translation}<br>
-        AI Translation: {ai_translation}<br>
-        {example_synonyms}<br>
-        {word_country_match}<br>
-        """
+        if example_synonyms == 0: # If no synonyms, show example sentence
+            email_body: str = f"""
+            My Translation: {translation}<br>
+            AI Translation: {ai_translation}<br>
+            Ex: {example_sentence}<br>
+            {word_country_match}<br>
+            """
+        else: # If synonyms exist, show synonyms instead of example sentence
+            email_body: str = f"""
+            My Translation: {translation}<br>
+            AI Translation: {ai_translation}<br>
+            {example_synonyms}<br>
+            {word_country_match}<br>
+            """
         logger.info(f"Email body: {email_body}")
 
     #####################################
