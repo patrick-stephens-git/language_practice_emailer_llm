@@ -321,7 +321,7 @@ def response_generation(word: str) -> tuple[str, str, str, str, str, str]:
         - Respond only with the list of Synonyms. Do not respond with any additional information.
         ---
         # Output Template:
-        Synonyms used in {target_country}: Synonym1, Synonym2, ... SynonymN.
+        Synonym1, Synonym2, ... SynonymN.
         """
     logger.info(f"{sample_synonym_input}")
 

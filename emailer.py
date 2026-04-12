@@ -44,9 +44,9 @@ def emailer(word: str, translation: str, ai_translation: str, example_sentence: 
     AI Translation: {ai_translation}<br>
     Common in {target_country}? {is_common}<br>
     Where are you most likely to see or hear {word}? {where_to_hear}<br>
+    Ex: {example_sentence}<br>
     {word_country_match}<br>
     {target_country} Synonyms: {example_synonyms}<br>
-    Ex: {example_sentence}<br>
     """ # Body shows target language word when English translation is in subject
     else: # If target language word is in subject, show English translation in body
         email_body: str = f"""
@@ -54,9 +54,9 @@ def emailer(word: str, translation: str, ai_translation: str, example_sentence: 
     AI Translation: {ai_translation}<br>
     Common in {target_country}? {is_common}<br>
     Where are you most likely to see or hear {word}? {where_to_hear}<br>
+    Ex: {example_sentence}<br>
     {word_country_match}<br>
     {target_country} Synonyms: {example_synonyms}<br>
-    Ex: {example_sentence}<br>
     """ # Body shows English translation when target language word is in subject
     logger.info(f"Email body: {email_body}")
 
