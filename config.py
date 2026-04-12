@@ -4,6 +4,7 @@ import os
 # Define the global variables
 target_country: str = "Mexico City"
 target_language: str = "Spanish"
+student_primary_language: str = "English"
 
 # If you have a focus on a specific language concept, you can set it here
 target_focus: str = "subjunctive mood" # ex: "imperfect conjugation"; leave empty if no focus: ""
