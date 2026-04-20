@@ -1,19 +1,8 @@
-from config import openai_api_key, target_country, target_language, student_primary_language, target_focus, focus_weight, subject_list, subject_usted_list
-from utils.logging_config import setup_logging
-from langchain_openai import ChatOpenAI
-import random
-import re
-
-def extract_commonality(text: str) -> str:
-    # Extract the location name from "is most common in X" regardless of whether X is quoted
-    # e.g., "The word or phrase 'no mames' is most common in Mexico."       -> "mexico"
-    # e.g., "The word or phrase 'no mames' is most common in 'Mexico'."     -> "mexico"
-    match = re.search(r"is most common in '?([^'.]+)'?\.?\s*$", text.strip(), re.IGNORECASE) # Match location after "is most common in", with or without quotes
-    if match:
-        text_clean = match.group(1).strip().lower() # Extract and normalize the matched location name
-    else:
-        text_clean = text.strip().lower() # Fallback: normalize the whole text
-    return text_clean
+from config import openai_api_key, target_country, target_language, student_primary_language, target_focus, focus_weight, subject_list, subject_usted_list # Import all config values needed for prompts
+from utils.logging_config import setup_logging # Import logger factory
+import openai # OpenAI SDK for direct API calls
+import json # For parsing structured JSON responses
+import random # For random subject selection
 
 def get_sample_sentence_subject() -> str:
     sample_sentence_subject: str = random.choice(subject_list) # Randomly select an item from the list
@@ -24,347 +13,152 @@ def get_sample_sentence_subject() -> str:
 
 
 def response_generation(word: str) -> tuple[str, str, str, str, str, str]:
-    # Logging
-    logger = setup_logging()
+    logger = setup_logging() # Initialize the logger
 
-    sample_sentence_subject: str = get_sample_sentence_subject() # Get a random sentence subject
+    sample_sentence_subject: str = get_sample_sentence_subject() # Get a random sentence subject before any API calls
 
-    # Initialize the LLM
-    llm = ChatOpenAI(model="gpt-4o-mini",
-                     api_key=openai_api_key,
-                     temperature=1.2, # Creativity of response (0.0 to 2.0)
-                     max_tokens=70, # Max tokens of response length
-                     timeout=30, # Max time (in secs) for a response from OpenAI API
-                     max_retries=2, # Max retry attempts if request fails (Default is 2)
-                     n=1, # Max num of responses to generate (default is 1)
-                     presence_penalty=-2.0, # Encourage/Discourage inclusion of new topics in response (default is 0.0; range is -2.0 to 2.0)
-                     frequency_penalty=0.0, # Encourage/Discourage inclusion of the same tokens in response (default is 0.0; range is -2.0 to 2.0)
-                     streaming=False # stream response back from OpenAI API (default is False)
-                     )
+    client = openai.OpenAI(api_key=openai_api_key, max_retries=2, timeout=30) # Create a single reusable OpenAI client with retry and timeout config
 
     ###############################################
+    # Call 1 — Factual Query: location + is_common (independent, no prior context)
     ###############################################
-    # LLM Prompt to determine if word is commonly spoken in all Spanish-speaking countries or Mexico, or Spain, etc...
-    word_country_match_input: str = f"""
-        # Role:
-        - You are a teacher of the {target_language} language.
-        - You are helping a student learn {target_language}.
+    factual_system: str = (
+        f"You are an expert {target_language} teacher and a native speaker from {target_country}. "
+        "Answer questions about vocabulary usage concisely and accurately. "
+        "Always respond with valid JSON only — no extra text, no markdown." # Enforce JSON-only output
+    )
+    factual_user: str = (
+        f"The student is learning the {target_language} word or phrase: '{word}'.\n\n"
+        "Answer both questions below. Respond ONLY with a JSON object matching this exact schema: "
+        '{"location": "...", "is_common": "..."}\n\n'
+        f"Question 1 — Where is '{word}' most commonly spoken? Choose exactly one of: "
+        '"all Spanish-speaking countries", "Mexico", "Spain", "Colombia", "Argentina", '
+        '"Venezuela", "Chile", "Guatemala", "Ecuador", "Costa Rica", "Puerto Rico", "Other". '
+        'Assign your answer to the "location" key.\n\n'
+        f"Question 2 — Is '{word}' commonly used in everyday speech in {target_country}? "
+        f"'Commonly used' means native speakers use it in casual conversations, on the street, "
+        f"at home, or among friends in {target_country}, OR it is common slang or informal expression there. "
+        'Assign exactly "Yes", "No", or "Unsure" to the "is_common" key.\n\n'
+        "Do NOT explain your reasoning. Do NOT include any text outside the JSON object." # Prevent extra output
+    )
+    logger.info(f"Call 1 (factual) user prompt: {factual_user}") # Log the prompt for debugging
 
-        # Goal Completion Guidelines:
-        - You will be given a Target Word or Phrase. Use the Target Word or Phrase to complete your tasks.
-
-        # Target Word or Phrase:
-        - The student is learning the Target Word or Phrase: '{word}'.
-
-        # Goal:
-        Your goal is to complete the following tasks:
-
-        ## Task 1: Determine where the Target Word or Phrase is commonly spoken
-        - Determine if the Target Word or Phrase '{word}' is more commonly spoken in:
-        -- all Spanish-speaking countries
-        -- Mexico
-        -- Spain
-        -- Columbia
-        -- Argentina
-        -- Venezuela
-        -- Chile
-        -- Guatemala
-        -- Ecuador
-        -- Costa Rica
-        -- Puerto Rico
-        -- Other
-        - A word or phrase is 'commonly spoken' if:
-        -- '{word}' is frequently used in everyday conversations by native speakers.
-        -- The media (TV, newspapers, radio, internet) frequently uses '{word}'.
-        - Answer with the country name or 'Other' if you are uncertain.
-        - Provide ONLY the following context depending on your answer: "The word or phrase '{word}' is most common in locationName."
-        - Replace 'locationName' with the answer: 'all Spanish-speaking countries' OR an individual country name (e.g: 'Mexico', 'Spain') OR 'Other'.
-        - Do NOT provide any other information in your response beyond what is specified above.
-        - Do NOT explain your reasoning.
-        ---
-        # Output Template:
-        The word or phrase '{word}' is most common in locationName.
-        """
-    logger.info(f"{word_country_match_input}")
-
-    word_country_match_response = llm.invoke(word_country_match_input) # Generate LLM response for Word-Country Match
-    logger.info(f"{word_country_match_response}")
-    word_country_match: str = word_country_match_response.content # Extract text content from response
+    call1_location: str = "" # Default location if Call 1 fails
+    call1_is_common: str = "Unsure" # Default commonality if Call 1 fails
+    try:
+        call1_response = client.chat.completions.create( # Send Call 1 to the API
+            model="gpt-4o-mini", # Use the fast and cost-effective model
+            messages=[
+                {"role": "system", "content": factual_system}, # System role for factual calls
+                {"role": "user", "content": factual_user}, # User question for factual calls
+            ],
+            response_format={"type": "json_object"}, # Force structured JSON output
+            temperature=1.2, # Creativity of response (0.0 to 2.0)
+            max_tokens=60, # Sufficient for small JSON object with short values
+        )
+        call1_raw: str = call1_response.choices[0].message.content # Extract raw JSON string from response
+        logger.info(f"Call 1 raw response: {call1_raw}") # Log raw response before parsing
+        call1_data: dict = json.loads(call1_raw) # Parse JSON string into a Python dict
+        call1_location = str(call1_data.get("location", "")).strip() # Extract location value, default empty
+        call1_is_common = str(call1_data.get("is_common", "Unsure")).strip() # Extract is_common value, default Unsure
+    except json.JSONDecodeError as e:
+        logger.error(f"Call 1 JSON parse error: {e}") # Log parse failure with error details
 
     ###############################################
+    # Call 2 — Factual Verification: same questions, fully independent (no Call 1 context)
     ###############################################
-    # LLM Prompt for Double Checking if Word or Phrase is common in Target Country
-    word_country_match_check_input: str = f"""
-        # Role:
-        - You are a teacher of the {target_language} language.
-        - You are helping a student learn {target_language}.
+    logger.info(f"Call 2 (verification) user prompt: {factual_user}") # Log same prompt used independently
 
-        # Goal Completion Guidelines:
-        - You will be given a Target Word or Phrase. Use the Target Word or Phrase to complete your tasks.
-
-        # Target Word or Phrase:
-        - The student is learning the Target Word or Phrase: '{word}'.
-
-        # Goal:
-        Your goal is to complete the following tasks:
-
-        ## Task 1: Determine where the Target Word or Phrase is commonly spoken
-        - Determine if the Target Word or Phrase '{word}' is more commonly spoken in:
-        -- All Spanish-speaking countries
-        -- Mexico
-        -- Spain
-        -- Columbia
-        -- Argentina
-        -- Venezuela
-        -- Chile
-        -- Guatemala
-        -- Ecuador
-        -- Costa Rica
-        -- Puerto Rico
-        -- Other
-        - A word or phrase is 'commonly spoken' if:
-        -- '{word}' is frequently used in everyday conversations by native speakers.
-        -- The media (TV, newspapers, radio, internet) frequently uses '{word}'.
-        - Answer with the country name or 'Other' if you are uncertain.
-        - Provide ONLY the following context depending on your answer: "The word or phrase '{word}' is most common in 'locationName'."
-        - Replace 'locationName' with the answer: 'All Spanish-speaking countries' OR an individual country name (e.g: 'Mexico', 'Spain') OR 'Other'.
-        - Do NOT provide any other information in your response beyond what is specified above.
-        - Do NOT explain your reasoning.
-        ---
-        # Output Template:
-        The word or phrase '{word}' is most common in 'locationName'.
-        """
-    logger.info(f"{word_country_match_check_input}")
-
-    word_country_match_check_response = llm.invoke(word_country_match_check_input) # Generate LLM response for Word-Country Match Checker
-    logger.info(f"{word_country_match_check_response}")
-    word_country_match_check: str = word_country_match_check_response.content # Extract text content from response
+    call2_location: str = "" # Default location if Call 2 fails
+    call2_is_common: str = "Unsure" # Default commonality if Call 2 fails
+    try:
+        call2_response = client.chat.completions.create( # Send Call 2 independently to the API
+            model="gpt-4o-mini", # Use the fast and cost-effective model
+            messages=[
+                {"role": "system", "content": factual_system}, # Same system role, no Call 1 result included
+                {"role": "user", "content": factual_user}, # Same question, no Call 1 result included
+            ],
+            response_format={"type": "json_object"}, # Force structured JSON output
+            temperature=1.2, # Creativity of response (0.0 to 2.0)
+            max_tokens=60, # Sufficient for small JSON object with short values
+        )
+        call2_raw: str = call2_response.choices[0].message.content # Extract raw JSON string from response
+        logger.info(f"Call 2 raw response: {call2_raw}") # Log raw response before parsing
+        call2_data: dict = json.loads(call2_raw) # Parse JSON string into a Python dict
+        call2_location = str(call2_data.get("location", "")).strip() # Extract location value, default empty
+        call2_is_common = str(call2_data.get("is_common", "Unsure")).strip() # Extract is_common value, default Unsure
+    except json.JSONDecodeError as e:
+        logger.error(f"Call 2 JSON parse error: {e}") # Log parse failure with error details
 
     ###############################################
+    # Consistency check: compare Call 1 and Call 2 results
     ###############################################
-    # Run consistency check immediately so all downstream prompts use the finalized value
-    word_country_match_commonality: str = extract_commonality(word_country_match) # Normalize first country response
-    word_country_match_check_commonality: str = extract_commonality(word_country_match_check) # Normalize second country response
-
-    if word_country_match_commonality != word_country_match_check_commonality:
-        word_country_match = "I am not sure where the word or phrase is most commonly spoken." # Use fallback if responses disagree
-
-    # Extract the agreed location; empty string if uncertain so downstream prompts don't invent a country
-    word_country_match_location: str = extract_commonality(word_country_match) if word_country_match != "I am not sure where the word or phrase is most commonly spoken." else "" # Only extract location when we have a confident answer
-
-    ###############################################
-    ###############################################
-    # LLM Prompt to get the English translation of the word
-    translation_input: str = f"""
-        # Role:
-        - You are a teacher of the {target_language} language.
-        - You are helping a student learn {target_language}.
-
-        # Goal Completion Guidelines:
-        - You will be given a Target Word or Phrase. Use the Target Word or Phrase to complete your tasks.
-
-        # Target Word or Phrase:
-        - The student is learning the Target Word or Phrase: '{word}'.
-
-        # Goal:
-        Your goal is to complete the following tasks:
-
-        ## Task 1: Provide the Meaning of the Target Word or Phrase
-        - Provide an {student_primary_language} meaning of the Target Word or Phrase '{word}' in {target_country}.
-        - Replace ai_translation with this {student_primary_language} meaning.
-        - Limit your response to ONLY the {student_primary_language} meaning of the Target Word or Phrase.
-        - Respond only with the ai_translation. Do not respond with any additional information.
-        - Do NOT explain your reasoning.
-        ---
-        # Output Template:
-        ai_translation
-        """
-    logger.info(f"{translation_input}")
-
-    translation_response = llm.invoke(translation_input) # Generate LLM response for AI translation
-    logger.info(f"{translation_response}")
-    ai_translation: str = translation_response.content # Extract text content from response
-
-    ###############################################
-    ###############################################
-    # LLM Prompt to determine if word is common in everyday speech in target country
-    is_common_input: str = f"""
-        # Role:
-        - You are a teacher of the {target_language} language.
-        - You are helping a student learn {target_language}.
-
-        # Goal Completion Guidelines:
-        - You will be given a Target Word or Phrase. Use the Target Word or Phrase to complete your tasks.
-
-        # Target Word or Phrase:
-        - The student is learning the Target Word or Phrase: '{word}'.
-
-        # Goal:
-        Your goal is to complete the following tasks:
-
-        ## Task 1: Determine if the Target Word or Phrase is common in everyday speech in {target_country}
-        - Determine if '{word}' is commonly used in everyday speech by native speakers in {target_country}.
-        - A word or phrase is 'common in everyday speech' if ANY of the following are true:
-        -- '{word}' is frequently used in casual conversations by native speakers in {target_country}.
-        -- You would regularly hear '{word}' spoken on the street, at home, or among friends in {target_country}.
-        -- '{word}' is a commonly used slang term or informal expression in {target_country}.
-        - Respond ONLY with 'Yes' or 'No'.
-        - Do NOT explain your reasoning.
-        ---
-        # Output Template:
-        Yes/No
-        """
-    logger.info(f"{is_common_input}")
-
-    is_common_response = llm.invoke(is_common_input) # Generate LLM response for everyday commonality check
-    logger.info(f"{is_common_response}")
-    is_common: str = is_common_response.content.strip() # Extract and trim text content from response
-
-    ###############################################
-    ###############################################
-    # LLM Prompt for Double Checking if word is common in everyday speech in target country
-    is_common_check_input: str = f"""
-        # Role:
-        - You are a native speaker of {target_language} from {target_country}.
-        - You are helping a student learn {target_language}.
-
-        # Goal Completion Guidelines:
-        - You will be given a Target Word or Phrase. Use the Target Word or Phrase to complete your tasks.
-
-        # Target Word or Phrase:
-        - The student is learning the Target Word or Phrase: '{word}'.
-
-        # Goal:
-        Your goal is to complete the following tasks:
-
-        ## Task 1: Determine if the Target Word or Phrase is common in everyday speech in {target_country}
-        - Determine if '{word}' is commonly used in everyday speech by native speakers in {target_country}.
-        - A word or phrase is 'common in everyday speech' if ANY of the following are true:
-        -- '{word}' is frequently used in casual conversations by native speakers in {target_country}.
-        -- You would regularly hear '{word}' spoken on the street, at home, or among friends in {target_country}.
-        -- '{word}' is a commonly used slang term or informal expression in {target_country}.
-        - Respond ONLY with 'Yes' or 'No'.
-        - Do NOT explain your reasoning.
-        ---
-        # Output Template:
-        Yes/No
-        """
-    logger.info(f"{is_common_check_input}")
-
-    is_common_check_response = llm.invoke(is_common_check_input) # Generate LLM response for everyday commonality double-check
-    logger.info(f"{is_common_check_response}")
-    is_common_check: str = is_common_check_response.content.strip() # Extract and trim text content from response
-
-    if is_common.lower() == is_common_check.lower():
-        is_common = is_common # Keep original if both responses agree
+    if call1_location.lower() == call2_location.lower() and call1_location != "": # Both calls agree on a non-empty location
+        word_country_match_location: str = call1_location.title() # Normalize casing for display
+        word_country_match: str = f"The word or phrase '{word}' is most common in {word_country_match_location}." # Build the sentence used in the email
     else:
-        is_common = "Unsure" # Use fallback if responses disagree
+        word_country_match_location = "" # No confident location; leave blank so generative prompt doesn't invent one
+        word_country_match = "I am not sure where the word or phrase is most commonly spoken." # Fallback when calls disagree
+
+    if call1_is_common.lower() == call2_is_common.lower(): # Both calls agree on commonality
+        is_common: str = call1_is_common # Use the agreed-upon value
+    else:
+        is_common = "Unsure" # Fallback when calls disagree on commonality
 
     ###############################################
+    # Call 3 — Generative Outputs: translation, where_to_hear, synonyms, sample_sentence
     ###############################################
-    # LLM Prompt to determine where you are most likely to see or hear the word
-    where_to_hear_input: str = f"""
-        # Role:
-        - You are a teacher of the {target_language} language.
-        - You are helping a student learn {target_language}.
+    focus_line_text: str = f"You have a {focus_weight} chance of writing the sample sentence to demonstrate {target_focus}. " if target_focus != "" else "" # Include focus instruction only when a focus is configured
 
-        # Goal Completion Guidelines:
-        - You will be given a Target Word or Phrase. Use the Target Word or Phrase to complete your tasks.
+    generative_system: str = (
+        f"You are a {target_language} teacher born and raised in {target_country}. "
+        f"You help students learn {target_language} through practical examples. "
+        "Always respond with valid JSON only — no extra text, no markdown." # Enforce JSON-only output
+    )
+    generative_user: str = (
+        f"The student is learning the {target_language} word or phrase: '{word}'.\n\n"
+        "Context already established:\n"
+        f"- This word is most commonly spoken in: {word_country_match_location if word_country_match_location else 'unknown'}.\n" # Inject verified location
+        f"- This word is commonly used in everyday speech in {target_country}: {is_common}.\n\n" # Inject verified commonality
+        "Complete all four tasks below. Respond ONLY with a JSON object matching this exact schema: "
+        '{"translation": "...", "where_to_hear": "...", "synonyms": "...", "sample_sentence": "..."}\n\n'
+        f"Task 1 (translation): Provide the {student_primary_language} meaning of '{word}' as used in {target_country}. One short phrase only.\n\n"
+        f"Task 2 (where_to_hear): Write 1 short sentence in {student_primary_language} describing where a student is most likely to see or hear '{word}'. "
+        f"If it IS common in {target_country}, describe the context there. "
+        f"If it is NOT common in {target_country}, describe the context in {word_country_match_location if word_country_match_location else 'its primary region'}.\n\n"
+        f"Task 3 (synonyms): List synonyms for '{word}' commonly used in {target_country}, ranked most-to-least common. Comma-separated list only.\n\n"
+        f"Task 4 (sample_sentence): Write one example sentence using '{word}' in {target_language} as used in normal conversation in {target_country}. "
+        f"The subject must be: '{sample_sentence_subject}'. {focus_line_text}"
+        "Do NOT explain your reasoning. Do NOT include any text outside the JSON object." # Prevent extra output
+    )
+    logger.info(f"Call 3 (generative) user prompt: {generative_user}") # Log the prompt for debugging
 
-        # Target Word or Phrase:
-        - The student is learning the Target Word or Phrase: '{word}'.
+    ai_translation: str = "[unavailable]" # Default if Call 3 fails
+    where_to_hear: str = "[unavailable]" # Default if Call 3 fails
+    example_synonyms: str = "[unavailable]" # Default if Call 3 fails
+    example_sentence: str = "[unavailable]" # Default if Call 3 fails
+    try:
+        call3_response = client.chat.completions.create( # Send Call 3 to the API
+            model="gpt-4o-mini", # Use the fast and cost-effective model
+            messages=[
+                {"role": "system", "content": generative_system}, # System role for generative call
+                {"role": "user", "content": generative_user}, # User prompt for generative call
+            ],
+            response_format={"type": "json_object"}, # Force structured JSON output
+            temperature=1.2, # Creativity of response (0.0 to 2.0)
+            max_tokens=160, # Sufficient for four fields including a full example sentence
+        )
+        call3_raw: str = call3_response.choices[0].message.content # Extract raw JSON string from response
+        logger.info(f"Call 3 raw response: {call3_raw}") # Log raw response before parsing
+        call3_data: dict = json.loads(call3_raw) # Parse JSON string into a Python dict
+        ai_translation = str(call3_data.get("translation", "[unavailable]")).strip() # Extract translation value
+        where_to_hear = str(call3_data.get("where_to_hear", "[unavailable]")).strip() # Extract where_to_hear value
+        example_synonyms = str(call3_data.get("synonyms", "[unavailable]")).strip() # Extract synonyms value
+        example_sentence = str(call3_data.get("sample_sentence", "[unavailable]")).strip() # Extract sample_sentence value
+    except json.JSONDecodeError as e:
+        logger.error(f"Call 3 JSON parse error: {e}") # Log parse failure with error details
 
-        # Goal:
-        Your goal is to complete the following tasks:
-
-        ## Task 1: Describe where a student is most likely to see or hear '{word}'
-        - You have already determined that '{word}' is common in everyday speech in {target_country}: {is_common}.
-        - You have already determined that '{word}' is most commonly spoken in: {word_country_match_location}.
-        - If '{word}' IS common in {target_country}: describe the most common context(s) where it is seen or heard there.
-        - If '{word}' is NOT common in {target_country}: do NOT invent a {target_country} context. Instead, describe the context(s) where it is seen or heard in {word_country_match_location}.
-        - Examples of contexts: 'in informal conversations with friends', 'in formal business settings', 'in written literature', 'on TV news broadcasts', 'in religious settings'.
-        - Respond with 1 short sentence. Do NOT force a {target_country} context if the word is not used there.
-        - Respond using ONLY {student_primary_language}.
-        - Do NOT explain your reasoning.
-        ---
-        # Output Template:
-        contextSentence
-        """
-    logger.info(f"{where_to_hear_input}")
-
-    where_to_hear_response = llm.invoke(where_to_hear_input) # Generate LLM response for where to hear the word
-    logger.info(f"{where_to_hear_response}")
-    where_to_hear: str = where_to_hear_response.content # Extract text content from response
-
-    ###############################################
-    ###############################################
-    # LLM Prompt for Synonym Generation
-    sample_synonym_input: str = f"""
-        # Role:
-        - You were born and raised in {target_country}.
-        - You are a teacher of the {target_language} language.
-        - You are helping a student learn {target_language}.
-
-        # Goal Completion Guidelines:
-        - You will be given a Target Word or Phrase. Use the Target Word or Phrase to complete your tasks.
-
-        # Target Word or Phrase:
-        - The student is learning the Target Word or Phrase: '{word}'.
-
-        # Goal:
-        Your goal is to complete the following tasks:
-
-        ## Task 1: Gather a list of Synonyms for the Target Word or Phrase more commonly used in the {target_country}.
-        - Provide a list of Synonyms for the Target Word or Phrase '{word}' that are more commonly used in {target_country}.
-        - Do NOT include Synonyms that are not commonly used in {target_country}.
-        - Rank the Synonyms in order of most commonly used to least commonly used in {target_country}.
-        - Respond only with the list of Synonyms. Do not respond with any additional information.
-        ---
-        # Output Template:
-        Synonym1, Synonym2, ... SynonymN.
-        """
-    logger.info(f"{sample_synonym_input}")
-
-    sample_synonym_response = llm.invoke(sample_synonym_input) # Generate LLM Sample Synonym response
-    logger.info(f"{sample_synonym_response}")
-    example_synonyms: str = sample_synonym_response.content # Extract text content from response
-
-    ###############################################
-    ###############################################
-    # LLM Prompt for Sample Sentence Generation
-    focus_line: str = f"            - You have a {focus_weight} chance of writing a Sample Sentence that helps the student learn about {target_focus}.\n" if target_focus != "" else "" # Include focus instruction only when a focus topic is configured
-    sample_sentence_input: str = f"""
-            # Role:
-            - You were born and raised in {target_country}.
-            - You are a teacher of the {target_language} language.
-            - You are helping a student learn {target_language}.
-
-            # Goal Completion Guidelines:
-            - You will be given a Target Word. Use the Target Word to complete your tasks.
-
-            # Target Word:
-            - The student is learning the Target Word: '{word}'.
-
-            # Goal:
-            Your goal is to complete the following tasks:
-
-            ## Task 1: Write a Sample Sentence
-            - Write the student a Sample Sentence using '{word}' in the {target_language} language as you would use it in a normal conversation.
-            - Emphasize common use cases of '{word}' within {target_country}.
-            - Make the Subject of the Sample Sentence: '{sample_sentence_subject}'.
-            - The Sample Sentence should represent as if you were speaking directly to OR about the subject.
-{focus_line}            - Respond only with the sample sentence. Do not respond with any additional information.
-            ---
-            # Output Template:
-            - SampleSentence.
-            """
-    logger.info(f"{sample_sentence_input}")
-
-    sample_sentence_response = llm.invoke(sample_sentence_input) # Generate LLM Sample Sentence response
-    logger.info(f"{sample_sentence_response}")
-    example_sentence: str = sample_sentence_response.content # Extract text content from response
-
-    return ai_translation, example_synonyms, example_sentence, word_country_match, is_common, where_to_hear
+    return ai_translation, example_synonyms, example_sentence, word_country_match, is_common, where_to_hear # Return the same 6-tuple expected by main.py and emailer.py
 
 if __name__ == '__main__':
     # word: str = "coger" # Example for "Most common in Spain"

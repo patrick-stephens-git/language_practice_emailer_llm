@@ -3,7 +3,7 @@
 # Production dependencies
 pandas
 python-dotenv
-langchain_openai
+openai
 
 # Development dependencies
 pytest
