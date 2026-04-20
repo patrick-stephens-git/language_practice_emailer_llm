@@ -112,18 +112,18 @@ def response_generation(word: str) -> tuple[str, str, str, str, str, str]:
 
     generative_system: str = (
         f"You are a {target_language} teacher born and raised in {target_country}. "
-        f"You help students learn {target_language} through practical examples. "
+        f"You help language students learn {target_language} through practical examples. "
         "Always respond with valid JSON only — no extra text, no markdown." # Enforce JSON-only output
     )
     generative_user: str = (
-        f"The student is learning the {target_language} word or phrase: '{word}'.\n\n"
+        f"The language student is learning the {target_language} word or phrase: '{word}'.\n\n"
         "Context already established:\n"
         f"- This word is most commonly spoken in: {word_country_match_location if word_country_match_location else 'unknown'}.\n" # Inject verified location
         f"- This word is commonly used in everyday speech in {target_country}: {is_common}.\n\n" # Inject verified commonality
         "Complete all four tasks below. Respond ONLY with a JSON object matching this exact schema: "
         '{"translation": "...", "where_to_hear": "...", "synonyms": "...", "sample_sentence": "..."}\n\n'
         f"Task 1 (translation): Provide the {student_primary_language} meaning of '{word}' as used in {target_country}. One short phrase only.\n\n"
-        f"Task 2 (where_to_hear): Write 1 short sentence in {student_primary_language} describing where a student is most likely to see or hear '{word}'. "
+        f"Task 2 (where_to_hear): Write 1 short sentence in {student_primary_language} describing where a person living in {target_country} is most likely to see or hear '{word}'. "
         f"If it IS common in {target_country}, describe the context there. "
         f"If it is NOT common in {target_country}, describe the context in {word_country_match_location if word_country_match_location else 'its primary region'}.\n\n"
         f"Task 3 (synonyms): List synonyms for '{word}' commonly used in {target_country}, ranked most-to-least common. Comma-separated list only.\n\n"
