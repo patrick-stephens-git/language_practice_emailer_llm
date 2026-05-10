@@ -1,9 +1,7 @@
-from utils.date import today
 from utils.logging_config import setup_logging
 from config import sender_email_account, sender_email_password, email_recipients, target_country
 import smtplib
 from email.mime.text import MIMEText
-import random # Import random module for randomly selecting subject format
 
 def emailer(word: str, translation: str, ai_translation: str, example_sentence: str, example_synonyms: str, word_country_match: str, is_common: str, where_to_hear: str) -> None:
     #####################################
@@ -28,36 +26,20 @@ def emailer(word: str, translation: str, ai_translation: str, example_sentence: 
 
     #####################################
     ## Setup Subject Line:
-    show_translation_in_subject: bool = random.choice([True, False]) # Randomly decide whether to show word or translation in subject
-    logger.info(f"Show translation in subject: {show_translation_in_subject}") # Log which format was selected
-    if show_translation_in_subject: # If True, use the English translation as the subject
-        email_subject_line: str = f"{today}: {translation}" # Use English translation as the subject
-    else: # If False, use the target language word as the subject
-        email_subject_line: str = f"{today}: {word}" # Use target language word as the subject
+    email_subject_line: str = f"{word}: {example_sentence}" # Prefix the example sentence with the word or phrase being practiced
     logger.info(f"Email subject line: {email_subject_line}")
 
     #####################################
     ## Setup Email Body:
-    if show_translation_in_subject: # If English translation is in subject, show target language word in body
-        email_body: str = f"""
+    email_body: str = f"""
     Word or Phrase: {word}<br>
-    AI Translation: {ai_translation}<br>
-    Common in {target_country}? {is_common}<br>
-    Where are you most likely to see or hear {word}? {where_to_hear}<br>
-    Ex: {example_sentence}<br>
-    {word_country_match}<br>
-    {target_country} Synonyms: {example_synonyms}<br>
-    """ # Body shows target language word when English translation is in subject
-    else: # If target language word is in subject, show English translation in body
-        email_body: str = f"""
     My Translation: {translation}<br>
     AI Translation: {ai_translation}<br>
     Common in {target_country}? {is_common}<br>
     Where are you most likely to see or hear {word}? {where_to_hear}<br>
-    Ex: {example_sentence}<br>
     {word_country_match}<br>
     {target_country} Synonyms: {example_synonyms}<br>
-    """ # Body shows English translation when target language word is in subject
+    """ # Body shows the word, both translations, and contextual info
     logger.info(f"Email body: {email_body}")
 
     #####################################
