@@ -1,8 +1,12 @@
-from config import openai_api_key, target_country, target_language, student_primary_language, target_focus, focus_weight, subject_list, subject_usted_list # Import all config values needed for prompts
+from config import openai_api_key, target_country, target_language, student_primary_language, target_focus_list, focus_weight, subject_list, subject_usted_list # Import all config values needed for prompts
 from utils.logging_config import setup_logging # Import logger factory
 import openai # OpenAI SDK for direct API calls
 import json # For parsing structured JSON responses
 import random # For random subject selection
+
+def get_target_focus() -> str:
+    return random.choice(target_focus_list) # Randomly select a focus concept from the list
+
 
 def get_sample_sentence_subject() -> str:
     sample_sentence_subject: str = random.choice(subject_list) # Randomly select an item from the list
@@ -108,8 +112,9 @@ def response_generation(word: str) -> tuple[str, str, str, str, str, str]:
     ###############################################
     # Call 3 — Generative Outputs: translation, where_to_hear, synonyms, sample_sentence
     ###############################################
-    apply_focus: bool = target_focus != "" and random.random() < focus_weight # True if focus is set and random roll lands under the weight threshold
-    focus_line_text: str = f"Write the sample sentence to demonstrate {target_focus}. " if apply_focus else "" # Include focus instruction only when the coin flip lands
+    target_focus: str = get_target_focus() # Randomly select a focus concept for this run
+    apply_focus: bool = random.random() < focus_weight # True if random roll lands under the weight threshold
+    focus_line_text: str = f"Write the sample sentence to demonstrate: {target_focus}. " if apply_focus else "" # Include focus instruction only when the coin flip lands
 
     generative_system: str = (
         f"You are a {target_language} teacher born and raised in {target_country}. "
