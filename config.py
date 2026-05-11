@@ -7,7 +7,7 @@ target_language: str = "Spanish"
 student_primary_language: str = "English"
 
 # If you have a focus on a specific language concept, you can set it here
-focus_weight: float = 1.0 # 0.0 to 1.0; ex: 0.20 = 20% chance; set to 0.0 if no focus
+focus_weight: float = 0.4 # 0.0 to 1.0; ex: 0.20 = 20% chance; set to 0.0 if no focus
 target_focus_list: list = ('subjunctive mood', 'passive se') # List of language concepts to randomly focus on each run
 
 subject_list: list = ('yo','tú','usted','ustedes','ella','nosotros')
