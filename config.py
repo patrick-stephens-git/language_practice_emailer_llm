@@ -8,9 +8,9 @@ student_primary_language: str = "English"
 
 # If you have a focus on a specific language concept, you can set it here
 target_focus: str = "subjunctive mood" # ex: "imperfect conjugation"; leave empty if no focus: ""
-focus_weight: str = "15%" # ex: "20%" (always use N% format); leave empty if no focus: ""
+focus_weight: float = 0.5 # 0.0 to 1.0; ex: 0.20 = 20% chance; set to 0.0 if no focus
 
-subject_list: list = ('yo','tú','usted')
+subject_list: list = ('yo','tú','usted','ustedes','él','ella','nosotros')
 subject_usted_list: list = ('waiter','cashier','bartender','dentist','doctor')
 
 # Load the environment variables

@@ -108,7 +108,8 @@ def response_generation(word: str) -> tuple[str, str, str, str, str, str]:
     ###############################################
     # Call 3 — Generative Outputs: translation, where_to_hear, synonyms, sample_sentence
     ###############################################
-    focus_line_text: str = f"You have a {focus_weight} chance of writing the sample sentence to demonstrate {target_focus}. " if target_focus != "" else "" # Include focus instruction only when a focus is configured
+    apply_focus: bool = target_focus != "" and random.random() < focus_weight # True if focus is set and random roll lands under the weight threshold
+    focus_line_text: str = f"Write the sample sentence to demonstrate {target_focus}. " if apply_focus else "" # Include focus instruction only when the coin flip lands
 
     generative_system: str = (
         f"You are a {target_language} teacher born and raised in {target_country}. "
