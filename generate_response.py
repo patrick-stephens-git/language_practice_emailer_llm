@@ -1,4 +1,4 @@
-from config import openai_api_key, target_country, target_language, student_primary_language, target_focus_list, focus_weight, subject_list, subject_usted_list # Import all config values needed for prompts
+from config import openai_api_key, target_country, target_language, student_primary_language, target_focus_list, focus_weight, subject_list, subject_usted_list, verb_tense_list # Import all config values needed for prompts
 from utils.logging_config import setup_logging # Import logger factory
 import openai # OpenAI SDK for direct API calls
 import json # For parsing structured JSON responses
@@ -6,6 +6,10 @@ import random # For random subject selection
 
 def get_target_focus() -> str:
     return random.choice(target_focus_list) # Randomly select a focus concept from the list
+
+
+def get_verb_tense() -> str:
+    return random.choice(verb_tense_list) # Randomly select a verb tense from the list
 
 
 def get_sample_sentence_subject() -> str:
@@ -20,6 +24,7 @@ def response_generation(word: str) -> tuple[str, str, str, str, str, str]:
     logger = setup_logging() # Initialize the logger
 
     sample_sentence_subject: str = get_sample_sentence_subject() # Get a random sentence subject before any API calls
+    sample_verb_tense: str = get_verb_tense() # Get a random verb tense before any API calls
 
     client = openai.OpenAI(api_key=openai_api_key, max_retries=2, timeout=30) # Create a single reusable OpenAI client with retry and timeout config
 
@@ -114,8 +119,6 @@ def response_generation(word: str) -> tuple[str, str, str, str, str, str]:
     ###############################################
     target_focus: str = get_target_focus() # Randomly select a focus concept for this run
     apply_focus: bool = random.random() < focus_weight # True if random roll lands under the weight threshold
-    focus_line_text: str = f"Write the sample sentence to demonstrate: {target_focus}. " if apply_focus else "" # Include focus instruction only when the coin flip lands
-
     generative_system: str = (
         f"You are a {target_language} teacher born and raised in {target_country}. "
         f"You help language students learn {target_language} through practical examples. "
@@ -134,7 +137,9 @@ def response_generation(word: str) -> tuple[str, str, str, str, str, str]:
         f"If it is NOT common in {target_country}, describe the context in {word_country_match_location if word_country_match_location else 'its primary region'}.\n\n"
         f"Task 3 (synonyms): List synonyms for '{word}' commonly used in {target_country}, ranked most-to-least common. Comma-separated list only.\n\n"
         f"Task 4 (sample_sentence): Write one example sentence using '{word}' in {target_language} as used in normal conversation in {target_country}. "
-        f"The subject must be: '{sample_sentence_subject}'. {focus_line_text}"
+        f"The subject must be: '{sample_sentence_subject}'. "
+        f"The sentence must use the {sample_verb_tense} tense. "
+        f"{'Write the sample sentence to demonstrate: ' + target_focus + '. ' if apply_focus else ''}"
         "Do NOT explain your reasoning. Do NOT include any text outside the JSON object." # Prevent extra output
     )
     logger.info(f"Call 3 (generative) user prompt: {generative_user}") # Log the prompt for debugging

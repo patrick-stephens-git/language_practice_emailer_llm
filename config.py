@@ -12,6 +12,7 @@ target_focus_list: list = ('subjunctive mood', 'passive se') # List of language 
 
 subject_list: list = ('yo','tú','usted','ustedes','ella','nosotros')
 subject_usted_list: list = ('waiter','cashier','bartender','doctor','teacher','manager','boss')
+verb_tense_list: list = ('present','preterite','imperfect','future','conditional')
 
 # Load the environment variables
 load_dotenv('.env')
