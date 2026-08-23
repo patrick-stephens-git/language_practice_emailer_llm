@@ -27,8 +27,7 @@ def get_word() -> tuple[str, str]:
     
     #####################################
     ## Data Prep:
-    df = df[df["Lookup Count"] != 1] # Remove any strings that are looked up 1x (do this to only return words that are struggled with)
-    df = df.loc[df.index.repeat(df["Lookup Count"])] # Expand count of rows by the number in the "Lookup Count" column so that it's more likely to send words that are often reviewed
+    df = df.loc[df.index.repeat(df["Lookup Count"])] # Expand count of rows by the number in the "Lookup Count" column so that it's more likely to send words that are often reviewed (words looked up once still get a single entry)
     df = df.drop(columns=["Lookup Count"]) # Drop the "Lookup Count" column
     df = df.sample(frac=1).reset_index(drop=True) # Shuffle the dataframe
     df_head = df.head()
