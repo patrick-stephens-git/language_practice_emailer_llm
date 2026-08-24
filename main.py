@@ -1,6 +1,7 @@
 from datetime import datetime, time
 from pull_data import get_word
 from generate_response import response_generation
+from synonym_filter import filter_known_synonyms
 from emailer import emailer
 from utils.logging_config import setup_logging
 
@@ -14,8 +15,9 @@ def main() -> None:
         return
 
     setup_logging() # Initialize logging
-    sample_word, sample_translation = get_word() # Fetch a random word and its spreadsheet translation
+    sample_word, sample_translation, all_words = get_word() # Fetch a random word, its spreadsheet translation, and the full spreadsheet word list
     ai_translation, example_synonyms, example_sentence, word_country_match, is_common, where_to_hear = response_generation(sample_word) # Generate all AI responses
+    example_synonyms = filter_known_synonyms(example_synonyms, all_words) # Python-only step: drop any LLM-generated synonyms already present in the spreadsheet
     emailer(sample_word, sample_translation, ai_translation, example_sentence, example_synonyms, word_country_match, is_common, where_to_hear) # Send the email
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ import pandas as pd
 from config import sheet_id
 from utils.logging_config import setup_logging
 
-def get_word() -> tuple[str, str]:
+def get_word() -> tuple[str, str, list[str]]:
     #####################################
     ## Logging:
     logger = setup_logging()
@@ -27,6 +27,7 @@ def get_word() -> tuple[str, str]:
     
     #####################################
     ## Data Prep:
+    all_words: list[str] = df["Word"].dropna().unique().tolist() # Full word list captured before Lookup Count expansion, used later to filter LLM-generated synonyms already in the spreadsheet
     df = df.loc[df.index.repeat(df["Lookup Count"])] # Expand count of rows by the number in the "Lookup Count" column so that it's more likely to send words that are often reviewed (words looked up once still get a single entry)
     df = df.drop(columns=["Lookup Count"]) # Drop the "Lookup Count" column
     df = df.sample(frac=1).reset_index(drop=True) # Shuffle the dataframe
@@ -40,7 +41,7 @@ def get_word() -> tuple[str, str]:
 
     #####################################
     logger.info("Word & translation successfully collected.")
-    return sample_word, sample_translation
+    return sample_word, sample_translation, all_words
 
 if __name__ == '__main__':
-    sample_word, sample_translation = get_word()
+    sample_word, sample_translation, all_words = get_word()
