@@ -5,7 +5,7 @@ from emailer import emailer
 from utils.logging_config import setup_logging
 
 ACTIVE_WINDOW_START: time = time(7, 0) # 7:00 AM local
-ACTIVE_WINDOW_END: time = time(22, 5) # 10:05 PM local
+ACTIVE_WINDOW_END: time = time(23, 5) # 10:05 PM local
 
 def main() -> None:
     now: time = datetime.now().time() # Local machine time; checked before any other work, including logging setup

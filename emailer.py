@@ -42,10 +42,9 @@ def emailer(word: str, translation: str, ai_translation: str, example_sentence: 
     <br>
     Synonyms: {example_synonyms}<br>
     <br>
-    Where are you most likely to see or hear {word}? {where_to_hear}<br>
-    <br>
     Common in {target_country}? {is_common}<br>
-    {country_match_line}""" # Body shows the word, both translations, and contextual info
+    {country_match_line} <br>
+    Where are you most likely to see or hear {word}? {where_to_hear}""" # Body shows the word, both translations, and contextual info
     logger.info(f"Email body: {email_body}")
 
     #####################################
