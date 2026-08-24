@@ -30,16 +30,22 @@ def emailer(word: str, translation: str, ai_translation: str, example_sentence: 
     logger.info(f"Email subject line: {email_subject_line}")
 
     #####################################
+    ## Only include the country match sentence when the word isn't clearly common:
+    country_match_line: str = f"{word_country_match}<br>" if is_common.strip().lower() in ("no", "unsure") else ""
+
+    #####################################
     ## Setup Email Body:
     email_body: str = f"""
     Word or Phrase: {word}<br>
     My Translation: {translation}<br>
     AI Translation: {ai_translation}<br>
-    Common in {target_country}? {is_common}<br>
+    <br>
+    Synonyms: {example_synonyms}<br>
+    <br>
     Where are you most likely to see or hear {word}? {where_to_hear}<br>
-    {word_country_match}<br>
-    {target_country} Synonyms: {example_synonyms}<br>
-    """ # Body shows the word, both translations, and contextual info
+    <br>
+    Common in {target_country}? {is_common}<br>
+    {country_match_line}""" # Body shows the word, both translations, and contextual info
     logger.info(f"Email body: {email_body}")
 
     #####################################
